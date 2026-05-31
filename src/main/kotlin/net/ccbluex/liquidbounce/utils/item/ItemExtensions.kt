@@ -22,6 +22,7 @@
 package net.ccbluex.liquidbounce.utils.item
 
 import com.mojang.brigadier.StringReader
+import com.mojang.serialization.DynamicOps
 import net.ccbluex.liquidbounce.utils.client.isOlderThanOrEqual1_8
 import net.ccbluex.liquidbounce.utils.client.mc
 import net.ccbluex.liquidbounce.utils.client.player
@@ -38,8 +39,13 @@ import net.minecraft.core.BlockPos
 import net.minecraft.core.Holder
 import net.minecraft.core.Registry
 import net.minecraft.core.component.DataComponentGetter
+import net.minecraft.core.component.DataComponentType
 import net.minecraft.core.component.DataComponents
+import net.minecraft.core.component.TypedDataComponent
+import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.core.registries.Registries
+import net.minecraft.nbt.NbtOps
+import net.minecraft.nbt.Tag
 import net.minecraft.network.protocol.game.ServerboundSetCreativeModeSlotPacket
 import net.minecraft.resources.ResourceKey
 import net.minecraft.world.effect.MobEffectInstance
@@ -91,6 +97,7 @@ import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.state.BlockState
 import java.util.Optional
 import kotlin.jvm.optionals.getOrNull
+import kotlin.jvm.optionals.toList
 
 /**
  * Create item with NBT tags
@@ -331,4 +338,24 @@ fun ItemStack.isInteractable(): Boolean {
         || item is FireChargeItem
         || item is FlintAndSteelItem
         || item is PotionItem
+}
+
+fun ItemStack.getCommandComponents(): String {
+    val registry = mc.level!!.registryAccess();
+    val id = BuiltInRegistries.ITEM.getKey(this.item).toShortString();
+
+    val ops = registry.createSerializationContext(NbtOps.INSTANCE);
+    val components =
+        this.componentsPatch.entrySet().joinToString(",") { (k, v) -> serializeCommandComponent(k, v, ops) }
+
+    return if (components.isNotBlank()) "$id[$components]" else id
+}
+
+fun serializeCommandComponent(type: DataComponentType<*>, valueOpt: Optional<*>?, ops: DynamicOps<Tag>): String {
+    val compPath = (BuiltInRegistries.DATA_COMPONENT_TYPE.getKey(type) ?: return "").toShortString();
+
+    val value = valueOpt?.orElse(null) ?: return "!$compPath";
+
+    val component = TypedDataComponent.createUnchecked(type, value);
+    return component.encodeValue(ops).result().toList().joinToString(",") { tag -> "$compPath=$tag" }
 }

@@ -126,6 +126,9 @@ object ModuleInventoryTracker : ClientModule("InventoryTracker", ModuleCategorie
             "Press G to give item (creative)".asPlainText(ChatFormatting.YELLOW)
         )
         event.lore.add(
+            "Press C to copy give command".asPlainText(ChatFormatting.YELLOW)
+        )
+        event.lore.add(
             "Last Seen: ${toMinutesSeconds(lastSeen)}".asPlainText(ChatFormatting.GRAY)
         )
     }

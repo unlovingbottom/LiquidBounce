@@ -25,6 +25,7 @@ import net.ccbluex.liquidbounce.utils.client.chat
 import net.ccbluex.liquidbounce.utils.client.mc
 import net.ccbluex.liquidbounce.utils.client.regular
 import net.ccbluex.liquidbounce.utils.client.variable
+import net.ccbluex.liquidbounce.utils.item.getCommandComponents
 import net.ccbluex.liquidbounce.utils.text.PlainText
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.render.GuiRenderer
@@ -39,6 +40,7 @@ import net.minecraft.world.inventory.Slot
 import net.minecraft.world.item.ItemStack
 import org.lwjgl.glfw.GLFW
 import net.ccbluex.liquidbounce.utils.client.player as localplayer
+
 
 class ViewedInventoryScreen(private val player: () -> Player?) : Screen(PlainText.EMPTY) {
 
@@ -175,6 +177,17 @@ class ViewedInventoryScreen(private val player: () -> Player?) : Screen(PlainTex
             giveItem()
         }
 
+        if (input.key == GLFW.GLFW_KEY_C) {
+            val itemStack = currentItemStack ?: return true
+
+            val command = itemStackToGiveCommand(itemStack);
+            mc.keyboardHandler.clipboard = command
+            chat("Copied the give command to your clipboard.")
+            if (command.length > 256) {
+                chat("Command is over 256 characters long and may not fit in your chat!")
+            }
+        }
+
         return true
     }
 
@@ -184,6 +197,13 @@ class ViewedInventoryScreen(private val player: () -> Player?) : Screen(PlainTex
         if (handler == null) {
             onClose()
         }
+    }
+
+    fun itemStackToGiveCommand(stack: ItemStack): String {
+        val itemArgs = stack.getCommandComponents();
+        val itemCount = if (stack.isEmpty) 1 else maxOf(1, stack.count)
+
+        return ".give $itemArgs $itemCount"
     }
 
     private fun giveItem() {
